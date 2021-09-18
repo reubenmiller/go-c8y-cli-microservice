@@ -18,8 +18,9 @@ dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
 tasks:
   init:
     desc: Init microservice and dot env file (required for local development)
-    deps:
+    cmds:
       - task: init:microservice
+      - "sleep 2"
       - task: init:env
 
 
@@ -79,9 +80,9 @@ tasks:
     desc: Build the microservice artifact that can be uploaded to Cumulocity
     cmds:
       - chmod +x ./build/microservice.sh
-      - sudo ./build/microservice.sh pack --directory ./ --name {{.BINARY_NAME}} --tag "{{.VERSION_TAG}}"
+      - sudo bash -e ./build/microservice.sh pack --directory ./ --name {{.BINARY_NAME}} --tag "{{.VERSION_TAG}}"
       - mkdir -p {{.RELEASE_DIR}}
-      - mv {{.BINARY_NAME}}.zip {{.RELEASE_DIR}}/{{.BINARY_NAME}}-v{{.VERSION_TAG}}.zip
+      - mv -f {{.BINARY_NAME}}.zip {{.RELEASE_DIR}}/{{.BINARY_NAME}}-v{{.VERSION_TAG}}.zip
 
 
   deploy:microservice:

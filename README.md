@@ -79,5 +79,15 @@ c8y api /prometheus --host http://localhost:8000
 ```sh
 # Run a test command
 echo -e "1111\n22222" > input.list
-c8y api POST "/commands/importevents/run?wait=true" --host http://localhost:8000 --force --file "./input.list"
+c8y api POST "/commands/importevents/async" --host http://localhost:8000 --force --file "./input.list"
+```
+
+```sh
+# Run a test command
+echo -e "1111\n22222" > input.list
+c8y api POST "/service/go-c8y-cli-microservice/commands/importevents/sync" --force --file "./input.list"
+```
+
+```
+sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.1 bash
 ```

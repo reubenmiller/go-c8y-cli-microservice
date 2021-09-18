@@ -5,3 +5,4 @@ cmd/main/microservice_bootstrap.log
 cmd/main/application.log
 release/
 go-c8y-cli-microservice*
+input.list

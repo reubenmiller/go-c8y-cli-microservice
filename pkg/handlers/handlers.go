@@ -6,19 +6,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/reubenmiller/go-c8y/pkg/c8y"
 	"go.uber.org/zap"
 
 	"github.com/labstack/echo"
-	"github.com/reubenmiller/c8y-microservice-starter/internal/model"
+	"github.com/reubenmiller/go-c8y-cli-microservice/internal/model"
+	"github.com/reubenmiller/go-c8y-cli-microservice/pkg/c8ycli"
 )
 
 // RegisterHandlers registers the http handlers to the given echo server
 func RegisterHandlers(e *echo.Echo) {
-	e.Add("POST", "/commands/importevents/run", ExecuteCommandHandler)
+	e.Add("POST", "/commands/importevents/async", ImportEventsFactory(false))
+	e.Add("POST", "/commands/importevents/sync", ImportEventsFactory(true))
+	e.Add("POST", "/commands/debug", CommandHandler)
 }
 
 func saveFile(c echo.Context) (string, error) {
@@ -48,11 +49,53 @@ func saveFile(c echo.Context) (string, error) {
 	return dst.Name(), nil
 }
 
-// ExecuteCommandHandler returns a managed object by its name
-func ExecuteCommandHandler(c echo.Context) error {
+type (
+	CLICommand struct {
+		Command string `json:"command"`
+	}
+)
+
+func CommandHandler(c echo.Context) error {
 	cc := c.(*model.RequestContext)
 
-	shouldWait := c.QueryParam("wait")
+	cliCommand := new(CLICommand)
+	if err := c.Bind(cliCommand); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	creds := cc.Microservice.WithServiceUserCredentials()
+	executor := &c8ycli.Executor{
+		Command: cliCommand.Command,
+		Options: &c8ycli.CLIOptions{
+			Host:         cc.Microservice.Client.BaseURL.String(),
+			Tenant:       creds.Tenant,
+			Username:     creds.Username,
+			Password:     creds.Password,
+			EnableCreate: true,
+			EnableUpdate: true,
+			EnableDelete: false,
+		},
+	}
+	result, _ := executor.Execute(true)
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message":    "Command finished",
+		"command":    cliCommand.Command,
+		"stdout":     string(result.Stdout),
+		"stderr":     string(result.Stderr),
+		"exitCode":   result.ExitCode,
+		"durationMS": result.Cmd.ProcessState.UserTime().Milliseconds(),
+	})
+}
+
+// ExecuteCommandHandler returns a managed object by its name
+func ImportEventsFactory(wait bool) func(echo.Context) error {
+	return func(c echo.Context) error {
+		return ExecuteImportEvents(c, wait)
+	}
+}
+func ExecuteImportEvents(c echo.Context, wait bool) error {
+	cc := c.(*model.RequestContext)
 
 	inputFile, err := saveFile(c)
 
@@ -64,29 +107,22 @@ func ExecuteCommandHandler(c echo.Context) error {
 	}
 
 	c8yCommand := fmt.Sprintf("cat '%s' | c8y events create --text 'test event' --type 'ms_TestEvent' --select source.id,source.name --output csvheader", inputFile)
-	cmd := exec.Command("/bin/sh", "-c", c8yCommand)
-	var serviceUser c8y.ServiceUser
 
-	if len(cc.Microservice.Client.ServiceUsers) > 0 {
-		serviceUser = cc.Microservice.Client.ServiceUsers[0]
+	creds := cc.Microservice.WithServiceUserCredentials()
+	executor := &c8ycli.Executor{
+		Command: c8yCommand,
+		Options: &c8ycli.CLIOptions{
+			Host:         cc.Microservice.Client.BaseURL.String(),
+			Tenant:       creds.Tenant,
+			Username:     creds.Username,
+			Password:     creds.Password,
+			EnableCreate: true,
+			EnableUpdate: false,
+			EnableDelete: false,
+		},
 	}
 
-	cmd.Env = []string{
-		// Use ms credentials
-		"C8Y_HOST=" + cc.Microservice.Client.BaseURL.String(),
-		"C8Y_TENANT=" + serviceUser.Tenant,
-		"C8Y_USER=" + serviceUser.Username,
-		"C8Y_PASSWORD=" + serviceUser.Password,
-
-		// Disable any prompts
-		"C8Y_SETTINGS_CI=true",
-		"C8Y_SETTINGS_ACTIVITYLOG_ENABLED=/tmp",
-		"C8Y_SETTINGS_ACTIVITYLOG_ENABLED=false",
-	}
-
-	isAsync := !strings.EqualFold(shouldWait, "true")
-
-	if isAsync {
+	if !wait {
 
 		// Log the requests in c8y
 		cc.Microservice.Client.Event.Create(
@@ -101,20 +137,21 @@ func ExecuteCommandHandler(c echo.Context) error {
 		go func() {
 			defer os.Remove(inputFile)
 
-			out, err := cmd.Output()
+			result, err := executor.Execute(true)
+
 			if err != nil {
-				zap.S().Warnf("Command failed to run. cmd=%s, exit_code=%d, error=%s", c8yCommand, cmd.ProcessState.ExitCode(), err)
+				zap.S().Warnf("Command failed to run. cmd=%s, exit_code=%d, error=%s", c8yCommand, result.ExitCode, err)
 			} else {
-				zap.S().Warnf("Command was successful. cmd=%s, exit_code=%d", c8yCommand, cmd.ProcessState.ExitCode())
+				zap.S().Warnf("Command was successful. cmd=%s, exit_code=%d", c8yCommand, result.ExitCode)
 			}
 
 			// post execution result
 			event := c8y.NewEventBuilder(cc.Microservice.AgentID, "ms_Command", "Async command finished").
 				SetTimestamp(c8y.NewTimestamp()).
-				Set("ms_IsAsyncCommand", true).
-				Set("ms_Ok", err == nil).
 				Set("ms_Command", c8yCommand).
-				Set("ms_CommandOutput", string(out))
+				Set("ms_Command_ExitCode", result.ExitCode).
+				Set("ms_command_Stdout", string(result.Stdout)).
+				Set("ms_command_Stderr", string(result.Stderr))
 
 			if err != nil {
 				event.Set("ms_Err", err.Error())
@@ -126,27 +163,27 @@ func ExecuteCommandHandler(c echo.Context) error {
 		}()
 		return c.JSON(http.StatusOK, echo.Map{
 			"ok":      true,
-			"async":   isAsync,
-			"message": "Started script asynchronously",
+			"message": "Started command",
+			"async":   !wait,
 		})
 	}
 
 	defer os.Remove(inputFile)
 
 	// wait for command to complete
-	out, err := cmd.Output()
+	result, err := executor.Execute(true)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": fmt.Sprintf("Command failed to run. cmd=%s, exit_code=%d, error=%s", c8yCommand, cmd.ProcessState.ExitCode(), err),
+			"message": fmt.Sprintf("Command failed to run. cmd=%s, exit_code=%d, error=%s", c8yCommand, result.ExitCode, err),
 			"details": "",
 		})
 	}
 
-	zap.S().Debugf("Command output: %s", out)
-
 	return c.JSON(http.StatusOK, echo.Map{
 		"ok":      true,
-		"async":   isAsync,
 		"message": "Command executed successfully",
+		"async":   !wait,
+		"stdout":  string(result.Stdout),
+		"stderr":  string(result.Stderr),
 	})
 }
