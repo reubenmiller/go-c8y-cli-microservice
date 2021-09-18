@@ -1,4 +1,4 @@
-FROM golang:1.13 as builder
+FROM golang:1.17 as builder
 WORKDIR /app
 # Add go modules files
 ADD ./go.mod .
@@ -30,13 +30,12 @@ RUN \
 #
 # Application image
 #
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates git wget jq
+FROM alpine:3.11
+RUN apk --no-cache add ca-certificates git wget jq bash
 RUN apk update \
-    && apk add jq \
     && wget -O /etc/apk/keys/go-c8y-cli.pub https://reubenmiller.jfrog.io/artifactory/api/security/keypair/public/repositories/c8y-alpine \
-    && sh -c "echo 'https://reubenmiller.jfrog.io/artifactory/c8y-alpine/stable/main'" >> /etc/apk/repositories \
-    && apk --no-cache add go-c8y-cli
+    && echo 'https://reubenmiller.jfrog.io/artifactory/c8y-alpine/stable/main' >> /etc/apk/repositories \
+    && apk --no-cache --allow-untrusted add go-c8y-cli
 
 WORKDIR /go/bin
 COPY --from=builder /go/bin/app .
