@@ -1,0 +1,47 @@
+{
+  "apiVersion": "1",
+  "version": "0.0.1",
+  "provider": {
+    "name": "Example Company"
+  },
+  "isolation": "PER_TENANT",
+  "requiredRoles": [
+    "ROLE_INVENTORY_READ",
+    "ROLE_INVENTORY_CREATE",
+    "ROLE_INVENTORY_ADMIN",
+    "ROLE_IDENTITY_READ",
+    "ROLE_IDENTITY_ADMIN",
+    "ROLE_AUDIT_READ",
+    "ROLE_AUDIT_ADMIN",
+    "ROLE_MEASUREMENT_READ",
+    "ROLE_MEASUREMENT_ADMIN",
+    "ROLE_EVENT_READ",
+    "ROLE_EVENT_ADMIN",
+    "ROLE_ALARM_ADMIN",
+    "ROLE_ALARM_READ",
+    "ROLE_DEVICE_CONTROL_READ",
+    "ROLE_DEVICE_CONTROL_ADMIN"
+  ],
+  "roles": [],
+  "resources": {
+    "cpu": "0.5",
+    "memory": "256Mi"
+  },
+  "livenessProbe": {
+    "httpGet": {
+      "path": "/health",
+      "port": 80
+    },
+    "initialDelaySeconds": 30,
+    "periodSeconds": 120
+  },
+  "readinessProbe": {
+    "httpGet": {
+      "path": "/health",
+      "port": 80
+
+    },
+    "initialDelaySeconds": 20,
+    "periodSeconds": 15
+  }
+}

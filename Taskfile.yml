@@ -1,0 +1,98 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  APPLICATION_NAME: go-c8y-cli-microservice
+
+
+vars:
+  BINARY_NAME: go-c8y-cli-microservice
+  MAIN: ./cmd/main/main.go
+  RELEASE_DIR: release
+  VERSION_TAG:
+    sh: cat ./cumulocity.json | jq -r '.version'
+
+dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
+
+tasks:
+  init:
+    desc: Init microservice and dot env file (required for local development)
+    deps:
+      - task: init:microservice
+      - task: init:env
+
+
+  init:microservice:
+    desc: Init the microservice by creating a placeholder in Cumulocity
+    cmds:
+      - c8y microservices create --name {{.APPLICATION_NAME}} --file cumulocity.json
+
+
+  init:env:
+    desc: Init the dotenv file (.env)
+    vars:
+      C8Y_BOOTSTRAP_USER:
+        sh: c8y microservices getBootstrapUser --id {{.APPLICATION_NAME}} --select name --output csv
+      C8Y_BOOTSTRAP_PASSWORD:
+        sh: c8y microservices getBootstrapUser --id {{.APPLICATION_NAME}} --select password --output csv
+    cmds:
+      - |
+        cat << EOF > .env
+        APPLICATION_NAME={{.APPLICATION_NAME}}
+        C8Y_HOST={{.C8Y_HOST}}
+        C8Y_BOOTSTRAP_TENANT={{.C8Y_TENANT}}
+        C8Y_BOOTSTRAP_USER={{.C8Y_BOOTSTRAP_USER}}
+        C8Y_BOOTSTRAP_PASSWORD={{.C8Y_BOOTSTRAP_PASSWORD}}
+        EOF
+    silent: true
+
+
+  clean:release:
+    desc: Clean (delete) any release files
+    cmds:
+      - go clean
+      - rm -rf "{{.RELEASE_DIR}}"
+      - rm -f "{{.BINARY_NAME}}"
+
+
+  start:local:
+    desc: Start the microserviice locally
+    env:
+      SERVER_PORT: 8000
+    cmds:
+      - go run {{.MAIN}}
+
+
+  build:binary:
+    desc: Build go binary
+    summary: |
+      Build just the go binary and not the whole docker image.
+
+      Useful if you want to run the microservice outside of a dockerized environment
+    cmds:
+      - go build -o {{.BINARY_NAME}}_{{OS}}_{{ARCH}} -v {{.MAIN}}
+      - chmod +x "{{.BINARY_NAME}}_{{OS}}_{{ARCH}}"
+
+
+  build:microservice:
+    desc: Build the microservice artifact that can be uploaded to Cumulocity
+    cmds:
+      - chmod +x ./build/microservice.sh
+      - sudo ./build/microservice.sh pack --directory ./ --name {{.BINARY_NAME}} --tag "{{.VERSION_TAG}}"
+      - mkdir -p {{.RELEASE_DIR}}
+      - mv {{.BINARY_NAME}}.zip {{.RELEASE_DIR}}/{{.BINARY_NAME}}-v{{.VERSION_TAG}}.zip
+
+
+  deploy:microservice:
+    desc: Deploy microservice to Cumulocity
+    preconditions:
+      - sh: test -e {{.RELEASE_DIR}}
+    cmds:
+      - c8y microservices create --name {{.BINARY_NAME}} --file {{.RELEASE_DIR}}/{{.BINARY_NAME}}-v{{.VERSION_TAG}}.zip
+
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./pkg/app

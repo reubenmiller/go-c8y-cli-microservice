@@ -1,0 +1,45 @@
+{
+	"name": "microservice",
+	"dockerFile": "Dockerfile",
+	"context": "..",
+	"runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [8000],
+
+	// Use 'settings' to set *default* container specific settings.json values on container create. 
+	// You can edit these settings after create using File > Preferences > Settings > Remote.
+	"settings": {
+		"go.gopath": "/go",
+		"go.goroot": "/usr/local/go",
+		"go.lintTool": "golangci-lint",
+		"go.useLanguageServer": true,
+		"extensions.ignoreRecommendations": true,
+		"go.delveConfig": {
+			"dlvLoadConfig": {
+				"maxStringLen": 1024,
+				"maxArrayValues": 1000,
+			},
+			"apiVersion": 2,
+		},
+	},
+
+	// Add the IDs of extensions you want installed when the container is created in the array below.
+	"extensions": [
+		"golang.go",
+		"redhat.vscode-yaml",
+		"eamodio.gitlens"
+	],
+
+	"mounts": [
+		// Enable docker-in-docker
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+
+		// Mount local .cumulocity sessions folder, so all your c8y sessions are available inside the dev container
+        "source=${localEnv:HOME}/.cumulocity,target=/home/vscode/.cumulocity,type=bind,consistency=cached",
+	],
+	
+	// "postCreateCommand": "",
+
+	"remoteUser": "vscode"
+}
