@@ -91,3 +91,11 @@ c8y api POST "/service/go-c8y-cli-microservice/commands/importevents/sync" --for
 ```
 sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.1 bash
 ```
+
+## Execute command
+
+Execute a custom command. Note only creating data is supported
+
+```sh
+c8y api POST "/service/go-c8y-cli-microservice/commands/execute/sync" --data "command=c8y devices list | c8y events create --text 'Example event' --type 'c8y_CliExample'"
+```
