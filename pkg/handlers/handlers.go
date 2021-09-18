@@ -17,9 +17,9 @@ import (
 
 // RegisterHandlers registers the http handlers to the given echo server
 func RegisterHandlers(e *echo.Echo) {
-	e.Add("POST", "/commands/importevents/async", ImportEventsFactory(false))
-	e.Add("POST", "/commands/importevents/sync", ImportEventsFactory(true))
-	e.Add("POST", "/commands/debug", CommandHandler)
+	e.Add("POST", "/commands/importevents/async", ImportEventsHandlerFactory(false))
+	e.Add("POST", "/commands/importevents/sync", ImportEventsHandlerFactory(true))
+	e.Add("POST", "/commands/execute/sync", CumulocityCommandHandler)
 }
 
 func saveFile(c echo.Context) (string, error) {
@@ -55,7 +55,8 @@ type (
 	}
 )
 
-func CommandHandler(c echo.Context) error {
+// CumulocityCommandHandler is a handler to process go-c8y-cli commands received via a REST endpoint
+func CumulocityCommandHandler(c echo.Context) error {
 	cc := c.(*model.RequestContext)
 
 	cliCommand := new(CLICommand)
@@ -88,13 +89,15 @@ func CommandHandler(c echo.Context) error {
 	})
 }
 
-// ExecuteCommandHandler returns a managed object by its name
-func ImportEventsFactory(wait bool) func(echo.Context) error {
+// ImportEventsHandlerFactory returns a handler to import events. The user can either specify whether the results should be waited for, or executed asynchronously
+func ImportEventsHandlerFactory(wait bool) func(echo.Context) error {
 	return func(c echo.Context) error {
-		return ExecuteImportEvents(c, wait)
+		return ImportEventsFromFile(c, wait)
 	}
 }
-func ExecuteImportEvents(c echo.Context, wait bool) error {
+
+// ImportEventsFromFile import
+func ImportEventsFromFile(c echo.Context, wait bool) error {
 	cc := c.(*model.RequestContext)
 
 	inputFile, err := saveFile(c)
