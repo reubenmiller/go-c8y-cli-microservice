@@ -3,11 +3,11 @@ package app
 import (
 	"log"
 
-	"github.com/reubenmiller/c8y-microservice-starter/pkg/tasks"
+	"github.com/reubenmiller/go-c8y-cli-microservice/pkg/tasks"
 
 	"github.com/labstack/echo"
-	"github.com/reubenmiller/c8y-microservice-starter/internal/model"
-	"github.com/reubenmiller/c8y-microservice-starter/pkg/handlers"
+	"github.com/reubenmiller/go-c8y-cli-microservice/internal/model"
+	"github.com/reubenmiller/go-c8y-cli-microservice/pkg/handlers"
 	"github.com/reubenmiller/go-c8y/pkg/microservice"
 	"go.uber.org/zap"
 )

@@ -1,4 +1,4 @@
-module github.com/reubenmiller/c8y-microservice-starter
+module github.com/reubenmiller/go-c8y-cli-microservice
 
 require (
 	github.com/labstack/echo v3.3.10+incompatible
