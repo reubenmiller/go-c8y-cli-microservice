@@ -9,6 +9,7 @@ DEPLOY_USER=
 DEPLOY_PASSWORD=
 APPLICATION_NAME=
 APPLICATION_ID=
+PLATFORM="linux/amd64"
 
 PACK=1
 DEPLOY=1
@@ -199,7 +200,7 @@ clearTarget () {
 buildImage () {
 	cd "$DOCKERFILE_FOLDER"
 	echo "[INFO] Build image $IMAGE_NAME:$TAG_NAME"
-	docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg https_proxy=$HTTPS_PROXY -t $IMAGE_NAME:$TAG_NAME .
+	docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg https_proxy=$HTTPS_PROXY -t $IMAGE_NAME:$TAG_NAME --platform $PLATFORM .
 }
 
 exportImage () {
