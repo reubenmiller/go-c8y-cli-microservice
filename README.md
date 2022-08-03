@@ -76,7 +76,7 @@ docker save go-c8y-cli-microservice > image.tar
 You can either zip manually or via cli
 
 ```bash
-zip go-c8y-cli cumulocity.json image.tar
+zip go-c8y-cli-microservice cumulocity.json image.tar
 ```
 
 ## Deploy via task
