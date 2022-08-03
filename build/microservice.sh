@@ -200,12 +200,22 @@ clearTarget () {
 buildImage () {
 	cd "$DOCKERFILE_FOLDER"
 	echo "[INFO] Build image $IMAGE_NAME:$TAG_NAME"
-	docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg https_proxy=$HTTPS_PROXY -t $IMAGE_NAME:$TAG_NAME --platform $PLATFORM .
+	if docker ps > /dev/null 2>&1; then
+		docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg https_proxy=$HTTPS_PROXY -t $IMAGE_NAME:$TAG_NAME --platform $PLATFORM .
+	else
+		echo "Warning: docker requires sudo rights, you might be prompted for a password"
+		sudo docker build --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg https_proxy=$HTTPS_PROXY -t $IMAGE_NAME:$TAG_NAME --platform $PLATFORM .
+	fi
 }
 
 exportImage () {
 	echo "[INFO] Export image"
-	docker save $IMAGE_NAME:$TAG_NAME > "image.tar"
+	if docker ps > /dev/null 2>&1; then
+		docker save $IMAGE_NAME:$TAG_NAME > "image.tar"
+	else
+		echo "Warning: docker requires sudo rights, you might be prompted for a password"
+		sudo docker save $IMAGE_NAME:$TAG_NAME > "image.tar"
+	fi
 }
 
 zipFile () {
