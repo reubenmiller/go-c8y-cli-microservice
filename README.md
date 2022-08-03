@@ -30,6 +30,18 @@ The `~/.cumulocity` folder (created by go-c8y-cli) is mounted from your host OS 
 
 3. When prompted by VScode, rebuild/reopen the project in the dev container. Be patient, it needs to build a docker image.
 
+    If you do not want to open the project in a dev container, then you must install [go-task](https://taskfile.dev/installation/) using the following procedure:
+
+    ```sh
+    env GOBIN="$(pwd)/bin" go install github.com/go-task/task/v3/cmd/task@latest
+    export PATH=$(cd bin && pwd):$PATH
+
+    # alternative you can call the locally installed task version using:
+    bin/task init
+    bin/task build:microservice
+    bin/task deploy:microservice
+    ```
+
 4. Activate/Create a Cumulocity session pointing to the Cumulocity instance you want to develop against
 
     ```sh
