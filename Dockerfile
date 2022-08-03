@@ -30,7 +30,7 @@ RUN \
 #
 # Application image
 #
-FROM alpine:3.11
+FROM alpine:3.16
 RUN apk --no-cache add ca-certificates git wget jq bash
 RUN apk update \
     && wget -O /etc/apk/keys/reuben.d.miller\@gmail.com-61e3680b.rsa.pub https://reubenmiller.github.io/go-c8y-cli-repo/alpine/PUBLIC.KEY \
