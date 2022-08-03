@@ -57,6 +57,14 @@ Build the Cumulocity microservice zip file by executing
 task build:microservice
 ```
 
+**Notes**
+
+* It is assumed that the user running the command is able to run docker commands without using sudo. If your user does not have the correct permissions, then you may have some success using the following 
+
+    ```
+    sudo -E task build:microservice
+    ```
+
 ## Deploy
 
 ```
