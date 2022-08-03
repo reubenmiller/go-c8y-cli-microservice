@@ -30,6 +30,18 @@ The `~/.cumulocity` folder (created by go-c8y-cli) is mounted from your host OS 
 
 3. When prompted by VScode, rebuild/reopen the project in the dev container. Be patient, it needs to build a docker image.
 
+    If you do not want to open the project in a dev container, then you must install [go-task](https://taskfile.dev/installation/) using the following procedure:
+
+    ```sh
+    env GOBIN="$(pwd)/bin" go install github.com/go-task/task/v3/cmd/task@latest
+    export PATH=$(cd bin && pwd):$PATH
+
+    # alternative you can call the locally installed task version using:
+    bin/task init
+    bin/task build:microservice
+    bin/task deploy:microservice
+    ```
+
 4. Activate/Create a Cumulocity session pointing to the Cumulocity instance you want to develop against
 
     ```sh
@@ -56,6 +68,14 @@ Build the Cumulocity microservice zip file by executing
 ```sh
 task build:microservice
 ```
+
+**Notes**
+
+* It is assumed that the user running the command is able to run docker commands without using sudo. If your user does not have the correct permissions, then you may have some success using the following 
+
+    ```
+    sudo -E task build:microservice
+    ```
 
 ## Deploy
 
@@ -89,7 +109,7 @@ c8y api POST "/service/go-c8y-cli-microservice/commands/importevents/sync" --for
 ```
 
 ```
-sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.1 bash
+sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.2 bash
 ```
 
 ## Execute command
