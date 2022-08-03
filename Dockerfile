@@ -30,11 +30,11 @@ RUN \
 #
 # Application image
 #
-FROM alpine:3.11
+FROM alpine:3.16
 RUN apk --no-cache add ca-certificates git wget jq bash
 RUN apk update \
-    && wget -O /etc/apk/keys/rmiller-rsa-signing.rsa.pub https://reubenmiller.jfrog.io/artifactory/api/security/keypair/public/repositories/c8y-alpine \
-    && echo 'https://reubenmiller.jfrog.io/artifactory/c8y-alpine/stable/main' >> /etc/apk/repositories \
+    && wget -O /etc/apk/keys/reuben.d.miller\@gmail.com-61e3680b.rsa.pub https://reubenmiller.github.io/go-c8y-cli-repo/alpine/PUBLIC.KEY \
+    && sh -c "echo 'https://reubenmiller.github.io/go-c8y-cli-repo/alpine/stable/main'" >> /etc/apk/repositories \
     && apk --no-cache add go-c8y-cli
 
 WORKDIR /go/bin
