@@ -49,7 +49,7 @@ The `~/.cumulocity` folder (created by go-c8y-cli) is mounted from your host OS 
 
 * Ctrl-c does not work to kill the application. You will have to manually stop the process by either killing your console, or the process itself.
 
-## Build
+## Build via task
 
 Build the Cumulocity microservice zip file by executing
 
@@ -57,11 +57,39 @@ Build the Cumulocity microservice zip file by executing
 task build:microservice
 ```
 
-## Deploy
+## Build via docker cli
+
+You can build the microservice locally and upload it to the cumulocity after packing it together with the cumulocity manifest into a zip file.
+Find more about that in the [documentation](https://cumulocity.com/guides/microservice-sdk/concept/#overview).
+
+```bash
+docker build -t go-c8y-cli-microservice --no-cache --platform linux/amd64 .
+```
+If you are buulding on e.g. an Apple M1 you have to give --platform as a parameter for building a linux/amd64 container. Otherwise the microservice would not work.
+Save the container in a .tar via:
+
+
+```bash
+docker save go-c8y-cli-microservice > image.tar
+```
+
+You can either zip manually or via cli
+
+```bash
+zip go-c8y-cli cumulocity.json image.tar
+```
+
+## Deploy via task
 
 ```
 task deploy:microservice
 ```
+
+## Deploy via UI
+
+You can upload the .zip via the UI in the Administration application.
+
+![Preview](http://g.recordit.co/nkhGv2yMdD.gif)
 
 ## Testing the endpoints manually
 
