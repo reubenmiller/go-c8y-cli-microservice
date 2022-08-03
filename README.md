@@ -109,7 +109,7 @@ c8y api POST "/service/go-c8y-cli-microservice/commands/importevents/sync" --for
 ```
 
 ```
-sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.1 bash
+sudo docker run -it --env-file=.env go-c8y-cli-microservice:0.0.2 bash
 ```
 
 ## Execute command
